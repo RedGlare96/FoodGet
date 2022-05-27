@@ -24,6 +24,7 @@ base_url = 'https://food.grab.com'
 home_url = '/sg/en'
 add = 'Little India Arcade - 48 Serangoon Rd, Singapore, 217959'
 pagination = 2
+debug_mode = False
 
 
 def check_create_dir(dirname):
@@ -61,7 +62,33 @@ def xpath_soup(element):
 
 
 if __name__ == '__main__':
-    print('Initiating browser')
+    print('Foodget')
+
+    rootLogger = logging.getLogger()
+    consoleHandler = logging.StreamHandler(stdout)
+    check_create_dir('logs')
+    log_timestamp = datetime.now()
+    fileHandler = logging.FileHandler(
+        os.path.join('logs', 'TrainlineScraper{0}.log'.format(log_timestamp.strftime('%m-%d-%y-%H-%M-%S'))), 'w',
+        'utf-8')
+    fileHandler.setFormatter(logging.Formatter('%(asctime)s:-[%(name)s] - %(levelname)s - %(message)s'))
+    rootLogger.addHandler(consoleHandler)
+    rootLogger.addHandler(fileHandler)
+    rootLogger.setLevel(logging.DEBUG)
+    logging.getLogger('seleniumwire.handler').setLevel(logging.ERROR)
+    logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.ERROR)
+    logging.getLogger('seleniumwire.server').setLevel(logging.ERROR)
+    logging.getLogger('hpack.hpack').setLevel(logging.ERROR)
+    logging.getLogger('hpack.table').setLevel(logging.ERROR)
+    logging.getLogger('seleniumwire.storage').setLevel(logging.ERROR)
+    if debug_mode:
+        consoleHandler.setLevel(logging.DEBUG)
+    else:
+        consoleHandler.setLevel(logging.INFO)
+    fileHandler.setLevel(logging.DEBUG)
+    consoleHandler.setFormatter(logging.Formatter('[%(name)s] - %(levelname)s - %(message)s'))
+
+    rootLogger.info('Initiating browser')
     options = uc.ChromeOptions()
     options.user_data_dir = cookie_file
     options.binary_location = bin_dir
@@ -81,17 +108,18 @@ if __name__ == '__main__':
     options.add_argument("--start-maximized")
     driver = uc.Chrome(headless=False, options=options, version_main=91)
     try:
-        print('Connecting to home url')
+        rootLogger.info('Connecting to home url')
         driver.get(base_url + home_url)
-        print('Entering address')
+        rootLogger.info('Entering address')
         base_soup = BeautifulSoup(driver.page_source, 'html.parser')
         address_box = base_soup.find('input', {'class': 'ant-input'})
         address_box_sel = driver.find_element(By.XPATH, xpath_soup(address_box))
         text_value = address_box['value']
         if len(text_value) > 0:
-            print('Text already in box. Removing')
+            rootLogger.debug('Text already in box. Removing')
             for i in range(len(text_value)):
                 address_box_sel.send_keys(Keys.BACKSPACE)
+        time.sleep(1)
         # Simulated typing
         for i in add:
             address_box_sel.send_keys(i)
@@ -104,7 +132,7 @@ if __name__ == '__main__':
                                                .find('button', {'class': 'ant-btn submitBtn___2roqB ant-btn-primary'})))\
             .click()
         time.sleep(5)
-        print('Starting loop')
+        rootLogger.debug('Starting routine')
         listing_cnt_tot = 0
         action = ActionChains(driver)
         for page in range(pagination):
@@ -113,7 +141,7 @@ if __name__ == '__main__':
             results_soup = BeautifulSoup(driver.page_source, 'html.parser')
             pg_error = results_soup.find('h6', {'class': 'ErrorMessageWidget-title___3i3Uu'})
             if pg_error is not None:
-                print('End of results found. Ending process')
+                rootLogger.info('End of results found. Ending process')
                 break
             for r_ele in results_soup.find('div', {'class': 'ant-row-flex RestaurantListRow___1SbZY'}).find_all('div'):
                 try:
@@ -121,7 +149,7 @@ if __name__ == '__main__':
                         time.sleep(3)
                         listing_cnt += 1
                         if listing_cnt <= listing_cnt_tot:
-                            print('Already visited. Ignoring listing')
+                            rootLogger.debug('Already visited. Ignoring listing')
                             continue
                         res_link = r_ele.find('a')['href']
                         print(res_link)
@@ -135,7 +163,7 @@ if __name__ == '__main__':
                         time.sleep(3)
                         res_soup = BeautifulSoup(driver.page_source, 'html.parser')
                         '''
-                        print('Opening in new tab')
+                        rootLogger.info('Opening in new tab')
                         time.sleep(3)
                         driver.switch_to.new_window()
                         driver.get(base_url + res_link)
@@ -146,10 +174,10 @@ if __name__ == '__main__':
                         retry_cnt = 0
                         retry_wait = 3
                         while error_text is not None:
-                            print('Error page detected. Refreshing')
+                            rootLogger.error('Error page detected. Refreshing')
                             retry_cnt += 1
                             if retry_cnt == inc_limit:
-                                print('Retry limit reached. Increasing wait time')
+                                rootLogger.info('Retry limit reached. Increasing wait time')
                                 retry_wait += 3
                                 retry_cnt = 0
                             driver.refresh()
@@ -165,40 +193,43 @@ if __name__ == '__main__':
                         s = res_soup.find('script', type='application/json')
                         a = json.loads(s.text)
                         try:
-                            print('Getting latlng')
+                            rootLogger.info('Getting latlng')
                             values = a["props"]["initialReduxState"]["pageRestaurantDetail"]["entities"]
                             print(values[res_id]['latlng'])
                         except KeyError:
-                            print('Could not get key')
+                            rootLogger.error('Could not get key')
+                        ''''
                         print('Going back')
                         driver.back()
-                        print('Closing tab')
+                        '''
+                        rootLogger.info('Closing tab')
                         driver.close()
-                        print('Resetting tab focus')
+                        rootLogger.debug('Resetting tab focus')
                         driver.switch_to.window(driver.window_handles[0])
                 except TypeError:
                     pass
                 except KeyError:
                     pass
                 except Exception as exc:
-                    print('Error (inner)')
-                    print(str(exc))
-                    print('Closing tab')
+                    rootLogger.error('Error (inner)')
+                    rootLogger.error('Details: {}'.format(str(exc)))
+                    rootLogger.info('Closing tab')
                     driver.close()
-                    print('Resetting tab focus')
+                    rootLogger.debug('Resetting tab focus')
                     driver.switch_to.window(driver.window_handles[0])
                     continue
             listing_cnt_tot += listing_cnt
-            print('Increasing pagination')
+            rootLogger.info('Increasing pagination')
             results_soup = BeautifulSoup(driver.page_source, 'html.parser')
             load_more_button = driver.find_element(By.XPATH, xpath_soup(results_soup.find('button', {'class': 'ant-btn ant-btn-block'})))
             action.move_to_element(load_more_button).perform()
             time.sleep(3)
             action.click().perform()
     except Exception as exc:
-        print('Error (outer)')
-        print(str(exc))
+        rootLogger.error('Error (outer)')
+        rootLogger.error('Details: {}'.format(str(exc)))
     time.sleep(5)
-    print('Closing browser')
+    rootLogger.info('Closing browser')
+    rootLogger.info('Goodbye')
     driver.close()
     driver.quit()
