@@ -1,17 +1,9 @@
 import os
-import csv
 import time
 import json
-import random
-import shutil
 import logging
-import argparse
-from os import path
 from sys import stdout
 from datetime import datetime
-from datetime import timedelta
-from configparser import ConfigParser
-import requests
 from bs4 import BeautifulSoup
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -69,7 +61,7 @@ if __name__ == '__main__':
     check_create_dir('logs')
     log_timestamp = datetime.now()
     fileHandler = logging.FileHandler(
-        os.path.join('logs', 'TrainlineScraper{0}.log'.format(log_timestamp.strftime('%m-%d-%y-%H-%M-%S'))), 'w',
+        os.path.join('logs', 'FoodGet{0}.log'.format(log_timestamp.strftime('%m-%d-%y-%H-%M-%S'))), 'w',
         'utf-8')
     fileHandler.setFormatter(logging.Formatter('%(asctime)s:-[%(name)s] - %(levelname)s - %(message)s'))
     rootLogger.addHandler(consoleHandler)
@@ -120,11 +112,8 @@ if __name__ == '__main__':
             for i in range(len(text_value)):
                 address_box_sel.send_keys(Keys.BACKSPACE)
         time.sleep(1)
-        # Simulated typing
-        for i in add:
-            address_box_sel.send_keys(i)
-            time.sleep(random.choice([0.2, 0.4, 0.6, 0.3, 0.9]))
-        time.sleep(1)
+        address_box_sel.send_keys(add)
+        time.sleep(2)
         address_box_sel.send_keys(Keys.ENTER)
         print('Clicking submit')
         submit_button = driver\
