@@ -8,7 +8,8 @@ Scraper for the GrabFood website. Enters address as per input and scrapes Latitu
 4. [Install Epic browser](https://www.mediafire.com/file/enmuh6ndt2iozkw/epic-bin.zip/file) (Download and extract)
 5. [Install cookie with pre-configured VPN settings](https://www.mediafire.com/file/bu2tej14r1g251u/epic-proxies.zip/file) (Download and extract)
 6. Change the value of the variable 'add' to any required address
-7. Run `foodget.py`
+7. Change the value of the variable 'pagination' to set a finite number of clicks to the 'load more' button. Set to a very high number such as 100 if you want it to continue until the button is gone.
+8. Run `foodget.py`
 
 # Attempt to streamline scraping process
 Currently, the script opens each restaurant in a new tab and gets the data from the cached internal api response Nextjs leaves behind from Redux. Opening this page will cause a 429 error to come up on the page. To alleviate this, the script keeps refreshing the page, increasing wait time between refresh attempts in every 3 unsuccessful attempts. The browser will never be blocked because Cloudfront is unable to properly fingerprint the browser due to the patched version of chromedriver being used and Epic browser reporting a fake value each time a canvas fingerprint attempt is detected. 

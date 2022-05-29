@@ -15,7 +15,7 @@ bin_dir = 'epic-bin/epic.exe'
 base_url = 'https://food.grab.com'
 home_url = '/sg/en'
 add = 'Little India Arcade - 48 Serangoon Rd, Singapore, 217959'
-pagination = 2
+pagination = 100
 debug_mode = False
 
 
@@ -208,12 +208,19 @@ if __name__ == '__main__':
                     driver.switch_to.window(driver.window_handles[0])
                     continue
             listing_cnt_tot += listing_cnt
-            rootLogger.info('Increasing pagination')
-            results_soup = BeautifulSoup(driver.page_source, 'html.parser')
-            load_more_button = driver.find_element(By.XPATH, xpath_soup(results_soup.find('button', {'class': 'ant-btn ant-btn-block'})))
-            action.move_to_element(load_more_button).perform()
-            time.sleep(3)
-            action.click().perform()
+            if pagination > 1:
+                rootLogger.info('Increasing pagination')
+                results_soup = BeautifulSoup(driver.page_source, 'html.parser')
+                try:
+                    load_more_button = driver.find_element(By.XPATH, xpath_soup(
+                        results_soup.find('button', {'class': 'ant-btn ant-btn-block'})))
+                    action.move_to_element(load_more_button).perform()
+                    time.sleep(3)
+                    action.click().perform()
+                except Exception as exc:
+                    rootLogger.error('Could not find load more. Exiting')
+                    rootLogger.debug('Details: {}'.format(str(exc)))
+                    break
     except Exception as exc:
         rootLogger.error('Error (outer)')
         rootLogger.error('Details: {}'.format(str(exc)))
